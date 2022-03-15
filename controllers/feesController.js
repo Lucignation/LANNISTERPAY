@@ -10,25 +10,33 @@ client.on('error', (err) => console.log('Redis Client Connection Error', err));
 // exports.getFees = async (req, res, next) => {
 //   const fee = await req.body.FeeConfigurationSpec;
 //   const feeArray = fee.split('\n');
-//   console.log(feeArray[0]);
-//   await client.connect();
-//   await client.get('fcs', async (err, fee) => {
-//     if (err) console.log(err);
-//     if (fee !== null) {
-//       console.log('Cached Hit');
-//       return res.json(JSON.parse(fee));
-//     } else {
-//       console.log('Cached Miss');
-//       const fee = await req.body.FeeConfigurationSpec;
-//       // await client.setEx('fcs', 1000, JSON.stringify(fee));
-//       // fees.push(fee);
-//       // writeDataToFile('../data/fees.json', fees);
-//       console.log(fee);
-//     }
-//   });
+//   try {
+//     await client.connect();
+//     await client.get('fcs', async (err, allFees) => {
+//       if (err) console.log(err);
+//       if (allFees != null) {
+//         console.log('Cache hit');
+//         return res.json(JSON.parse(allFees));
+//         // next()
+//       } else {
+//         console.log('Cache missed');
+//         feeArray.map(async (f) => {
+//           const allFees = await new Fee({
+//             fee: f,
+//           });
+//           await allFees.save();
+//           client.setEx('fcs', 1000, JSON.stringify(allFees));
+//         });
 
-//   // res.json(data);
-//   await client.disconnect();
+//         return res.status(200).json({ msg: 'fee created' });
+//       }
+//       // await client.disconnect();
+//     });
+//     await client.disconnect();
+//   } catch (error) {
+//     console.log(error);
+//   }
+//   // console.log(feeArray[1]);
 // };
 
 exports.getFees = async (req, res, next) => {
@@ -36,15 +44,23 @@ exports.getFees = async (req, res, next) => {
   const feeArray = fee.split('\n');
   try {
     feeArray.map(async (f) => {
+      let eachValue = f.toString().split(' ');
+      let cardTypeV = eachValue[3].split(/[\s()]+/);
       const allFees = await new Fee({
-        fee: f,
+        feeId: eachValue[0],
+        currency: eachValue[1],
+        locale: eachValue[2],
+        cardType: cardTypeV[0],
+        cardTypeProperty: cardTypeV[1],
+        feeType: eachValue[6],
+        feeValue: eachValue[7],
       });
       await allFees.save();
-      // return res.status(200).json({ msg: 'fee created', data: allFees });
     });
+
     return res.status(200).json({ msg: 'fee created' });
   } catch (error) {
     console.log(error);
   }
-  console.log(feeArray[1]);
+  // console.log(feeArray[1]);
 };
