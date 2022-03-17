@@ -84,7 +84,6 @@ const getPrecedence = async (currency, locale, cardType, cardTypeProperty) => {
 //Getting the precedence to use
 const precedenceToUse = async (arrResult) => {
   let result = [];
-  let precedence = {};
   for (let item of arrResult) {
     if (
       item.locale === '*' &&
@@ -133,9 +132,7 @@ exports.postFeeComputation = async (req, res, next) => {
       [issuer, brand, '*']
     );
     const getPredence = await precedenceToUse(resultFee);
-    // console.log(getPrecedence);
     if (getPredence.feeType === 'FLAT_PERC') {
-      // console.log(getPrecedence.feeValue);
       const getTransactionFee = getPredence.feeValue.split(':');
       flatFee = getTransactionFee[0];
       transactonAmount = getTransactionFee[1];
