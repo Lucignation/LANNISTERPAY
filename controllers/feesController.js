@@ -73,7 +73,7 @@ const getPrecedence = async (currency, locale, cardType, cardTypeProperty) => {
       cardType,
       cardTypeProperty,
     });
-
+    // console.log(result);
     // const newREsult = await result;
     return result;
   } catch (error) {
@@ -109,7 +109,7 @@ exports.postFeeComputation = async (req, res, next) => {
   const cardCurrency = req.body.Currency;
   const amount = req.body.Amount;
   const currentCountry = req.body.CurrencyCountry;
-  const bearsFee = req.body.BearsFee;
+  const bearsFee = req.body.Customer.BearsFee;
   const brand = req.body.PaymentEntity.Brand;
   const issuer = req.body.PaymentEntity.Issuer;
   const type = req.body.PaymentEntity.Type;
@@ -117,7 +117,7 @@ exports.postFeeComputation = async (req, res, next) => {
   let settlementAmount = 0;
   let chargeAmount = 0;
   let flatFee = 0;
-  let transactonAmount = 0;
+  let transactionAmount = 0;
   let appliedFeeValue = 0;
   if (currentCountry === country) {
     locale = 'LOCL';
@@ -132,29 +132,35 @@ exports.postFeeComputation = async (req, res, next) => {
       [issuer, brand, '*']
     );
     const getPredence = await precedenceToUse(resultFee);
+    if (getPredence === undefined) {
+      return res.status(404).json({
+        Error: `No fee configuration for ${cardCurrency} transactions.`,
+      });
+    }
     if (getPredence.feeType === 'FLAT_PERC') {
       const getTransactionFee = getPredence.feeValue.split(':');
       flatFee = getTransactionFee[0];
-      transactonAmount = getTransactionFee[1];
+      transactionAmount = getTransactionFee[1];
 
-      appliedFeeValue = flatFee + (transactonAmount * amount) / 100;
+      const transactAmount = (transactionAmount / 100) * amount;
+      appliedFeeValue = parseInt(flatFee) + parseInt(Math.ceil(transactAmount));
     }
     if (getPredence.feeType === 'PERC') {
-      transactonAmount = getPredence.feeValue;
-      appliedFeeValue = (transactonAmount * amount) / 100;
+      transactionAmount = getPredence.feeValue;
+      appliedFeeValue = (transactionAmount * amount) / 100;
     }
 
     if (getPredence.feeType === 'FLAT') {
       appliedFeeValue = getPredence.feeValue;
     }
-
+    console.log(bearsFee);
     bearsFee
       ? (chargeAmount = amount + appliedFeeValue)
       : (chargeAmount = amount);
-
+    console.log(chargeAmount);
     settlementAmount = chargeAmount - appliedFeeValue;
 
-    console.log(appliedFeeValue);
+    // console.log(settlementAmount);
     return res.status(200).json({
       AppliedFeeID: getPredence.feeId,
       AppliedFeeValue: appliedFeeValue,
