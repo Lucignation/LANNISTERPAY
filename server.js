@@ -20,5 +20,5 @@ app.use(bodyParser.json());
 app.use(feesRoute);
 
 app.listen(port, () => {
-  console.log(`server running on port http://localhost:${PORT}`);
+  console.log(`server running on port http://localhost:${port}`);
 });
