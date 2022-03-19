@@ -1,10 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-
 const feesRoute = require('./routes/fees');
-
-//import db
 const connectDB = require('./config/db');
+
+require('./utils/redis');
 
 //init express middleware
 const app = express();

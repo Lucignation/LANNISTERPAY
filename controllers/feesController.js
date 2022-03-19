@@ -1,43 +1,5 @@
 const Fee = require('../models/fee');
-const Redis = require('redis');
-const { writeDataToFile } = require('../utils');
-
-const client = Redis.createClient();
-
-client.on('connect', () => console.log('Redis Client Connected'));
-client.on('error', (err) => console.log('Redis Client Connection Error', err));
-
-// exports.getFees = async (req, res, next) => {
-//   const fee = await req.body.FeeConfigurationSpec;
-//   const feeArray = fee.split('\n');
-//   try {
-//     await client.connect();
-//     await client.get('fcs', async (err, allFees) => {
-//       if (err) console.log(err);
-//       if (allFees != null) {
-//         console.log('Cache hit');
-//         return res.json(JSON.parse(allFees));
-//         // next()
-//       } else {
-//         console.log('Cache missed');
-//         feeArray.map(async (f) => {
-//           const allFees = await new Fee({
-//             fee: f,
-//           });
-//           await allFees.save();
-//           client.setEx('fcs', 1000, JSON.stringify(allFees));
-//         });
-
-//         return res.status(200).json({ msg: 'fee created' });
-//       }
-//       // await client.disconnect();
-//     });
-//     await client.disconnect();
-//   } catch (error) {
-//     console.log(error);
-//   }
-//   // console.log(feeArray[1]);
-// };
+const { clearKey } = require('../utils/redis');
 
 exports.postFees = async (req, res, next) => {
   const fee = await req.body.FeeConfigurationSpec;
@@ -57,27 +19,29 @@ exports.postFees = async (req, res, next) => {
       });
       await allFees.save();
     });
-
+    // clearKey(Fee.collection.collectionName);
     return res.status(200).json({ status: 'ok' });
   } catch (error) {
     console.log(error);
   }
-  // console.log(feeArray[1]);
 };
 
 const getPrecedence = async (currency, locale, cardType, cardTypeProperty) => {
   try {
+    // if (currency || locale || cardType || cardTypeProperty) {
+
+    // }
+
     const result = await Fee.find({
       currency,
       locale,
       cardType,
       cardTypeProperty,
     });
-    // console.log(result);
     // const newREsult = await result;
     return result;
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
   }
 };
 
@@ -91,10 +55,8 @@ const precedenceToUse = async (arrResult) => {
       item.cardTypeProperty === '*'
     ) {
       result = { ...result, low: item };
-      // console.log(item);
     } else {
       result = { ...result, high: item };
-      // console.log(item);
     }
   }
   if (!result.high) {
@@ -153,31 +115,25 @@ exports.postFeeComputation = async (req, res, next) => {
     if (getPredence.feeType === 'FLAT') {
       appliedFeeValue = getPredence.feeValue;
     }
-    console.log(bearsFee);
+
     bearsFee
       ? (chargeAmount = amount + appliedFeeValue)
       : (chargeAmount = amount);
-    console.log(chargeAmount);
+
     settlementAmount = chargeAmount - appliedFeeValue;
 
-    // console.log(settlementAmount);
     return res.status(200).json({
       AppliedFeeID: getPredence.feeId,
       AppliedFeeValue: appliedFeeValue,
       ChargeAmount: chargeAmount,
       SettlementAmount: settlementAmount,
     });
-    // if(!getPrecedence)
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
   }
 };
 
-const cardObj = {
-  currency: ['NGN', '*'],
-  locale: ['LOCL', '*'],
-  cardType: ['CREDIT-CARD', '*'],
-  cardTypeProperty: ['MASTERCARD', '*'],
+exports.deleteFees = async (req, res, next) => {
+  await Fee.deleteMany();
+  res.status(200).json({ status: 'Deleted' });
 };
-
-// console.log(getPrecedence(cardObj));

@@ -4,6 +4,7 @@ const route = express.Router();
 const {
   postFees,
   postFeeComputation,
+  deleteFees,
 } = require('../controllers/feesController');
 
 //@desc Get all fees
@@ -11,11 +12,15 @@ const {
 // route.get('/api/fees', getFees);
 
 //@desc Post Fees to use
-//@route POST /api/fees
-route.post('/api/fees', postFees);
+//@route POST /fees
+route.post('/fees', postFees);
 
-//@desc Post Fees to use
-//@route POST /api/fees
-route.post('/api/compute-transaction-fee', postFeeComputation);
+//@desc Post transactions computation
+//@route POST /compute-transaction-fee
+route.post('/compute-transaction-fee', postFeeComputation);
+
+//@desc Delete fees
+//@route DELETE /fee
+route.delete('/fees', deleteFees);
 
 module.exports = route;
