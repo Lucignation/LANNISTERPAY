@@ -9,7 +9,7 @@ require('./utils/redis');
 const app = express();
 
 //port
-const PORT = 5000 || process.env.PORT;
+const port = 5000 || process.env.PORT;
 
 //connect database
 connectDB();
@@ -19,6 +19,6 @@ app.use(bodyParser.json());
 
 app.use(feesRoute);
 
-app.listen(PORT, () => {
+app.listen(port, () => {
   console.log(`server running on port http://localhost:${PORT}`);
 });
