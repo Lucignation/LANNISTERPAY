@@ -9,7 +9,7 @@ require('./utils/redis');
 const app = express();
 
 //port
-const port = 5000 || process.env.PORT;
+const port = process.env.PORT || 5000;
 
 //connect database
 connectDB();
