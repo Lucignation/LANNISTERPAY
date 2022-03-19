@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  const LOCAL_DB = process.env.MONGODB_URI;
-  const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.lki96.mongodb.net/${process.env.MONGO_DATABASE}`;
+  const LOCAL_DB = process.env.MONGODB_URIL;
+  const MONGODB_URI = process.env.MONGODB_URI;
 
   try {
     await mongoose.connect(MONGODB_URI);
