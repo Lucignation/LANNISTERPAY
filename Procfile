@@ -1,2 +1,2 @@
 web: node server.js
-web: redis-server
+web: npm run redis-server
