@@ -14,16 +14,16 @@ or
 
 ## Interacting with api
 
-The post method allows you to post initial fees data
+The post method allows you to post initial fees data.
 [POST /fees](https://lannister-payng.herokuapp.com/fees)
 
-The get method allows you to cache the inital fees data
+The get method allows you to cache the inital fees data.
 [GET /fees](https://lannister-payng.herokuapp.com/fees)
 
-The delete method was done should you need to reset the db
+The delete method was done should you need to reset the db.
 [DELETE /fees](https://lannister-payng.herokuapp.com/fees)
 
-The post method compute the data provided under 50ms once the GET request has been called once to cache fees
+The post method compute the data provided under 50ms once the GET request has been called once to cache fees.
 [POST /compute-transaction-fee](https://lannister-payng.herokuapp.com/compute-transaction-fee)
 
 ## Places to find me
