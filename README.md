@@ -12,7 +12,7 @@ or
 
 `npm install`
 
-##Interacting with api
+## Interacting with api
 
 The post method allows you to post initial fees data
 [POST /fees](https://lannister-payng.herokuapp.com/fees)
