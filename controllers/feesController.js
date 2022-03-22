@@ -1,7 +1,9 @@
 const Fee = require('../models/fee');
 const Redis = require('ioredis');
 
-const redis = new Redis();
+const redis = new Redis({
+  connectTimeout: 10000
+});
 
 exports.postFees = async (req, res, next) => {
   const fee = await req.body.FeeConfigurationSpec;
