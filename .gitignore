@@ -3,3 +3,5 @@ node_modules/
 dump.rdb
 .env
 nodemon.json
+
+utils/

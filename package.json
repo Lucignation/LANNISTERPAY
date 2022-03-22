@@ -24,6 +24,7 @@
   "dependencies": {
     "body-parser": "^1.19.2",
     "express": "^4.17.3",
+    "ioredis": "^4.28.5",
     "mongodb": "^4.4.1",
     "mongoose": "^6.2.6",
     "redis": "^4.0.4"

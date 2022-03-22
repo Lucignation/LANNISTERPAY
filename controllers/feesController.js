@@ -1,11 +1,13 @@
 const Fee = require('../models/fee');
-const { clearKey } = require('../utils/redis');
+const Redis = require('ioredis');
+
+const redis = new Redis();
 
 exports.postFees = async (req, res, next) => {
   const fee = await req.body.FeeConfigurationSpec;
   const feeArray = fee.split('\n');
   try {
-    feeArray.map(async (f) => {
+    const all_item = feeArray.map(async (f) => {
       let eachValue = f.toString().split(' ');
       let cardTypeV = eachValue[3].split(/[\s()]+/);
       const allFees = await new Fee({
@@ -18,31 +20,63 @@ exports.postFees = async (req, res, next) => {
         feeValue: eachValue[7],
       });
       await allFees.save();
+      // await redis.set('fees', JSON.stringify(allFees));
     });
-    // clearKey(Fee.collection.collectionName);
+
     return res.status(200).json({ status: 'ok' });
   } catch (error) {
     console.log(error);
   }
 };
 
+exports.getAllFees = async (req, res, next) => {
+  const fetchAll = await Fee.find();
+  redis.set('fees', JSON.stringify(fetchAll));
+  res.status(200).json({ status: 'ok' });
+};
+
+// getAllFees();
+
 const getPrecedence = async (currency, locale, cardType, cardTypeProperty) => {
-  try {
-    // if (currency || locale || cardType || cardTypeProperty) {
+  let result = null;
+  const sentIn = { currency, locale, cardType, cardTypeProperty };
 
-    // }
+  await redis.get('fees', async (err, res) => {
+    if (res !== null) {
+      const cached = JSON.parse(res);
 
-    const result = await Fee.find({
-      currency,
-      locale,
-      cardType,
-      cardTypeProperty,
-    });
-    // const newREsult = await result;
-    return result;
-  } catch (error) {
-    console.log(error);
-  }
+      result = cached.filter((item) => {
+        return item.currency === currency[0] || item.currency === currency[1];
+      });
+
+      result = result.filter((item) => {
+        return item.locale === locale[0] || item.locale === locale[1];
+      });
+
+      result = result.filter((item) => {
+        return item.cardType === cardType[0] || item.cardType === cardType[1];
+      });
+
+      result = result.filter((item) => {
+        return (
+          item.cardTypeProperty === cardTypeProperty[0] ||
+          item.cardTypeProperty === cardTypeProperty[1] ||
+          item.cardTypeProperty === cardTypeProperty[2]
+        );
+      });
+    } else {
+      result = await Fee.find({
+        currency,
+        locale,
+        cardType,
+        cardTypeProperty,
+      });
+
+      await redis.set('fees', JSON.stringify(result), 'ex', 15);
+    }
+  });
+
+  return result;
 };
 
 //Getting the precedence to use
@@ -68,14 +102,18 @@ const precedenceToUse = async (arrResult) => {
 
 exports.postFeeComputation = async (req, res, next) => {
   let locale = '';
-  const cardCurrency = req.body.Currency;
-  const amount = req.body.Amount;
-  const currentCountry = req.body.CurrencyCountry;
-  const bearsFee = req.body.Customer.BearsFee;
-  const brand = req.body.PaymentEntity.Brand;
-  const issuer = req.body.PaymentEntity.Issuer;
-  const type = req.body.PaymentEntity.Type;
-  const country = req.body.PaymentEntity.Country;
+
+  const { Currency, Amount, CurrencyCountry, Customer, PaymentEntity } =
+    req.body;
+
+  const cardCurrency = Currency;
+  const amount = Amount;
+  const currentCountry = CurrencyCountry;
+  const bearsFee = Customer.BearsFee;
+  const brand = PaymentEntity.Brand;
+  const issuer = PaymentEntity.Issuer;
+  const type = PaymentEntity.Type;
+  const country = PaymentEntity.Country;
   let settlementAmount = 0;
   let chargeAmount = 0;
   let flatFee = 0;
@@ -93,27 +131,32 @@ exports.postFeeComputation = async (req, res, next) => {
       [type, '*'],
       [issuer, brand, '*']
     );
+
     const getPredence = await precedenceToUse(resultFee);
+
     if (getPredence === undefined) {
       return res.status(404).json({
         Error: `No fee configuration for ${cardCurrency} transactions.`,
       });
     }
-    if (getPredence.feeType === 'FLAT_PERC') {
-      const getTransactionFee = getPredence.feeValue.split(':');
+
+    const { feeId, feeType, feeValue } = getPredence;
+
+    if (feeType === 'FLAT_PERC') {
+      const getTransactionFee = feeValue.split(':');
       flatFee = getTransactionFee[0];
       transactionAmount = getTransactionFee[1];
 
       const transactAmount = (transactionAmount / 100) * amount;
       appliedFeeValue = parseInt(flatFee) + parseInt(Math.ceil(transactAmount));
     }
-    if (getPredence.feeType === 'PERC') {
-      transactionAmount = getPredence.feeValue;
+    if (feeType === 'PERC') {
+      transactionAmount = feeValue;
       appliedFeeValue = (transactionAmount * amount) / 100;
     }
 
-    if (getPredence.feeType === 'FLAT') {
-      appliedFeeValue = getPredence.feeValue;
+    if (feeType === 'FLAT') {
+      appliedFeeValue = feeValue;
     }
 
     bearsFee
@@ -123,7 +166,7 @@ exports.postFeeComputation = async (req, res, next) => {
     settlementAmount = chargeAmount - appliedFeeValue;
 
     return res.status(200).json({
-      AppliedFeeID: getPredence.feeId,
+      AppliedFeeID: feeId,
       AppliedFeeValue: appliedFeeValue,
       ChargeAmount: chargeAmount,
       SettlementAmount: settlementAmount,
@@ -133,6 +176,11 @@ exports.postFeeComputation = async (req, res, next) => {
   }
 };
 
+/* 
+  This was used for my debugging 
+  but I left it if you want it
+  for reset the db
+ */
 exports.deleteFees = async (req, res, next) => {
   await Fee.deleteMany();
   res.status(200).json({ status: 'Deleted' });
